@@ -1,69 +1,69 @@
+import torch
 from architecture import MyCNN
 from dataset import ImagesDataset
 from train import train_model
 from utils import evaluate_model
-import torch
+from utils import split_dataset
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from utils import split_dataset, evaluate_model, check_class_distribution
-import os
-
 
 # Main function structure is inspired by the main functions in a5_ex1.py and a5_ex2.py
 def main():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Find device for model training
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Check if GPU available
     print(f"Using device: {device}")
     if torch.cuda.is_available():
         print(f"Using GPU: {torch.cuda.get_device_name(0)}")
 
-    # Set random seed for reproducibility (inspired by a5_ex1.py)
+    # Set random seed for reproducibility
     torch.manual_seed(1234)
 
+    # Split Image dataset into training and valuation and save them in separate folders
     # Define directories
     source_dir = "Images"
     train_dir = "Images/training"
     val_dir = "Images/valuation"
 
-    # Split the dataset
+    # Split the dataset (see utils.py for function documentation)
     split_dataset(source_dir, train_dir, val_dir, split_ratio=0.2)
 
-    # Data augmentation is inspired by a6_ex1.py
+    # Performing simple Image augmentation to improve model performance (similar to a6_ex1.py)
     train_transform = transforms.Compose([
         transforms.RandomHorizontalFlip(),
-        transforms.RandomRotation(10),
+        transforms.RandomRotation(15),
+        transforms.RandomResizedCrop(100, scale=(0.8, 1.0)),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+        transforms.RandomGrayscale(p=0.1),
+        transforms.Normalize((0.5,), (0.5,))
     ])
 
-    # Dataset loading is similar to a3_ex1.py
-    train_dataset = ImagesDataset(train_dir, width=100, height=100)
-    val_dataset = ImagesDataset(val_dir, width=100, height=100)
+    val_transform = transforms.Compose([
+        transforms.Normalize((0.5,), (0.5,))
+    ])
+
+    # Loading Images
+    train_dataset = ImagesDataset(train_dir, width=100, height=100, transform=train_transform)
+    val_dataset = ImagesDataset(val_dir, width=100, height=100, transform=val_transform)
 
     # DataLoader creation is similar to a3_ex2.py
+    # Batch size, and number of workers is set as in best practice
+    # Shuffle = true for the training data, to mitigate biases and improve generalization
+    # Shuffle = false for evaluation, because we want to improve consistency
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=4)
     val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False, num_workers=4)
 
-    # Check class distribution
-    """
-    print("Training set class distribution:")
-    train_distribution = check_class_distribution(train_dataset)
-    print("\nValidation set class distribution:")
-    val_distribution = check_class_distribution(val_dataset)"""
+    model = MyCNN()  # Create an instance of the model defined in architecture.py
+    model.to(device)  # Move model to the selected device (CPU or GPU)
 
-    model = MyCNN()
-    if torch.cuda.device_count() > 1:
-        print(f"Using {torch.cuda.device_count()} GPUs!")
-        model = nn.DataParallel(model)
-    model.to(device)
-
-    # Training process is inspired by a5_ex1.py and a5_ex2.py
+    # Model training (similar to a5_ex1.py and a5_ex2.py)
     train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.001, device=device)
 
     # Model loading and final evaluation is inspired by a5_ex2.py
-    model.load_state_dict(torch.load("model.pth"))
+    model.load_state_dict(torch.load("model.pth", map_location=device))
 
     criterion = torch.nn.CrossEntropyLoss()
     val_loss, val_accuracy = evaluate_model(model, val_loader, criterion, device)
     print(f"Final Validation Loss: {val_loss:.4f}, Final Validation Accuracy: {val_accuracy:.4f}")
-
 
 if __name__ == "__main__":
     main()
