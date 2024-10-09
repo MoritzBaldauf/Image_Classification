@@ -33,7 +33,7 @@ This project implements a Convolutional Neural Network (CNN) for image classific
 
 1. Clone this repository:
    ```
-   git clone https://github.com/your-username/image-classification-project.git
+   git clone https://github.com/MoritzBaldauf/image-classification-project.git
    cd image-classification-project
    ```
 
@@ -71,11 +71,4 @@ This project implements a Convolutional Neural Network (CNN) for image classific
 After training, the script will output:
 - Training and validation loss/accuracy for each epoch
 - Final validation loss and accuracy
-
-## Contributing
-
-Contributions to improve the project are welcome. Please feel free to submit a Pull Request.
-
-## License
-
-[Specify your license here]
+- 
