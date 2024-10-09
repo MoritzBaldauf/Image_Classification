@@ -71,4 +71,4 @@ This project implements a Convolutional Neural Network (CNN) for image classific
 After training, the script will output:
 - Training and validation loss/accuracy for each epoch
 - Final validation loss and accuracy
-- 
+
